@@ -342,7 +342,7 @@ setInterval(function setup() {
 
 function testServer() {
   request({
-    uri: "https://stockbot-wkri.onrender.com/",
+    uri: "https://stockbot-8p0l.onrender.com/",
     method: "GET",
   }, (err, response, body) => {
     console.log('body: ', body);

@@ -9,7 +9,7 @@ var expressValidator = require('express-validator');
 var express = require('express');
 var cors = require('cors')
 var app = express();
-const PORT = process.env.PORT || 7001;
+const PORT = process.env.PORT || 7002;
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
