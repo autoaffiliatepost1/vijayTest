@@ -8,7 +8,7 @@ var connection = require('../config/connection');
 const BitlyClient = require('bitly').BitlyClient;
 const axios = require('axios');
 var _ = require('underscore');
-var moment = require('moment');
+var moment = require('moment-timezone');
 var qs = require('qs');
 var config = require('../config/global');
 // Import required modules
@@ -83,13 +83,8 @@ const connectWebSocket = async (wsUrl) => {
       console.log("disconnected");
     });
 
-    ws.on("message", function message(data1) {
-      let data = JSON.parse(data1);
-      // console.log("data received", data.toString());
-      console.log('data.status: ', data.status);
-      if (data.status == 'complete' && data.tag == ORDER_TAG) {
-        // placeOrder(data);
-      }
+    ws.on("message", function message(data) {
+      console.log("data received", data.toString());
     });
 
     ws.on("error", function onError(error) {
@@ -100,24 +95,25 @@ const connectWebSocket = async (wsUrl) => {
 };
 
 // Execute the async functions to get PortfolioFeedUrl and connect to WebSocket
-// (async () => {
-//   try {
-//     console.log('try: ');
-//     let sqlsss = "SELECT * FROM plateform_login";
-//     connection.query(sqlsss, async function (err, appData) {
-//       if (err) {
-//         await logUser("App data fetch api failed websocket");
-//       } else {
-//         OAUTH2.accessToken = appData[0].access_token;
-//         console.log('appData2222: ', appData[0].access_token);
-//         const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
-//         const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
-//       }
-//     })
-//   } catch (error) {
-//     console.error("An error occurred:", error);
-//   }
-// })();
+(async () => {
+  try {
+    console.log('try: ');
+    let sqlsss = "SELECT * FROM plateform_login";
+    connection.query(sqlsss, async function (err, appData) {
+      if (err) {
+        await logUser("App data fetch api failed websocket");
+      } else {
+        OAUTH2.accessToken = appData[0].access_token;
+        console.log('appData2222: ', appData[0].access_token);
+        const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
+        const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
+      }
+    })
+  } catch (error) {
+    // Catch and log any errors
+    console.error("An error occurred:", error);
+  }
+})();
 
 router.get('/tradedata', function (req, res) {
   async.waterfall([
@@ -530,75 +526,83 @@ router.get('/buySellApi', function (req, res) {
     function (nextCall) {
       let sqlsss = "SELECT * FROM plateform_login";
       connection.query(sqlsss, async function (err, appData) {
+        let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm:ss');
         if (err) {
           await teleStockMsg("App data fetch api failed");
           await logUser("App data fetch api failed");
         } else {
-          if (req.query.live_trade == 'true' || req.query.live_trade == 'TRUE') {
-            let requestHeaders1 = {
-              "accept": "application/json",
-              "Content-Type": "application/json",
-              "Api-Version": "2.0",
-              "Authorization": "Bearer " + appData[0].access_token
-            }
+          if(req.query.live_trade == 'true' || req.query.live_trade == 'TRUE'){
+          let requestHeaders1 = {
+            "accept": "application/json",
+            "Content-Type": "application/json",
+            "Api-Version": "2.0",
+            "Authorization": "Bearer " + appData[0].access_token
+          }
 
-            let data = {
-              'quantity': Number(req.query.quantity),
-              'product': req.query.product,
-              'validity': req.query.validity,
-              'price': Number(req.query.price),
-              'tag': req.query.tag,
-              'order_type': req.query.order_type,
-              'instrument_token': req.query.instrument_token,
-              'transaction_type': req.query.transaction_type,
-              'disclosed_quantity': Number(req.query.disclosed_quantity),
-              'trigger_price': Number(req.query.trigger_price),
-              'is_amo': req.query.is_amo = 'false' ? false : true
-            }
+          let data = {
+            'quantity': Number(req.query.quantity),
+            'product': req.query.product,
+            'validity': req.query.validity,
+            'price': Number(req.query.price),
+            'tag': req.query.tag,
+            'order_type': req.query.order_type,
+            'instrument_token': req.query.instrument_token,
+            'transaction_type': req.query.transaction_type,
+            'disclosed_quantity': Number(req.query.disclosed_quantity),
+            'trigger_price': Number(req.query.trigger_price),
+            'is_amo': req.query.is_amo = 'false' ? false : true
+          }
 
-            request({
-              uri: "https://api-v2.upstox.com/order/place",
-              method: "POST",
-              body: JSON.stringify(data),
-              headers: requestHeaders1
-            }, async (err, response, success) => {
-              if (err) {
-                await teleStockMsg("BuySellApi candle data featch failed");
-                await logUser("BuySellApi candle data featch failed");
+          request({
+            uri: "https://api-v2.upstox.com/order/place",
+            method: "POST",
+            body: JSON.stringify(data),
+            headers: requestHeaders1
+          }, async (err, response, success) => {
+            if (err) {
+              await teleStockMsg("<b>JS</b>😔 BuySellApi candle data failed "+ finalDate);
+              await logUser("BuySellApi candle data failed");
+              return nextCall({
+                "message": "something went wrong",
+                "data": null
+              });
+            } else {
+              let finalData = JSON.parse(success);
+              if (finalData.status && finalData.status == "error") {
+                finalData.client_secret = appData[0].client_secret;
+                finalData.status1 = "logout";
+                await updateLoginUser(finalData)
+                await teleStockMsg("<b>JS</b>😔 BuySellApi candle data failed "+ finalDate)
+                await logUser("BuySellApi candle data failed")
                 return nextCall({
                   "message": "something went wrong",
-                  "data": null
+                  "data": finalData
                 });
               } else {
-                let finalData = JSON.parse(success);
-                if (finalData.status && finalData.status == "error") {
-                  finalData.client_secret = appData[0].client_secret;
-                  finalData.status1 = "logout";
-                  await updateLoginUser(finalData)
-                  await teleStockMsg("BuySellApi candle data featch failed")
-                  await logUser("BuySellApi candle data featch failed")
-                  return nextCall({
-                    "message": "something went wrong",
-                    "data": finalData
-                  });
-                } else {
-                  await teleStockMsg("BuySellApi candle data featch successfully")
-                  await logUser("BuySellApi candle data featch successfully")
-                  console.log('req.query: ', req.query);
-                  console.log('finalData: ', finalData);
-                  req.query.order_id = finalData.data.order_id;
-                  req.query.user_id = appData[0].user_id;
-                  await orderBookDb(req.query);
-                  nextCall(null, finalData);
-                }
+                req.query.order_id = finalData.data.order_id;
+                req.query.user_id = appData[0].user_id;
+                // await orderBookDb(req.query);
+                var html = '<b>JS</b>📈 ' + req.query.order_type + '📈\n\n' +
+                '♨️ <b style="background-color:red;">User Name : </b> ' + appData[0].user_name + '\n' +
+                '🌐 <b>Share Name : </b> ' + req.query.instrument_token + '\n' +
+                '🚫 <b>Price : </b> ' + req.query.price + '\n' +
+                '💰 <b>Quantity : </b> ' + req.query.quantity + '\n' +
+                '🕙 <b>Order Book Time : </b> ' + finalDate + '\n' +
+                '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+                // '🟢 <b>High Value : </b> <i> ' + finalData.high_value + '</i>\n' +
+                // '🔴 <b>Low Value : </b> <i> ' + finalData.low_value + '</i>\n';
+                await teleStockMsg(html)
+                await logUser("BuySellApi candle data featch successfully")
+                nextCall(null, finalData);
               }
-            })
-          } else {
-            await teleStockMsg(req.query.order_type + " api featch successfully")
-            await logUser(req.query.order_type + " api featch successfully")
-            await orderModify(req.query);
-            nextCall(null, req.query);
-          }
+            }
+          })
+         }else{
+          await teleStockMsg("<b>JS</b>🏷️ "+req.query.order_type +" api featch but no order")
+          await logUser(req.query.order_type +" api featch but no order")
+          // await orderModify(req.query);
+          nextCall(null, req.query);
+         }
         }
       })
     },
@@ -702,8 +706,9 @@ router.get('/intraday', function (req, res) {
     function (nextCall) {
       let sqlsss = "SELECT * FROM plateform_login";
       connection.query(sqlsss, async function (err, appData) {
+        let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm:ss');
         if (err) {
-          await teleStockMsg("App data fetch api failed");
+          await teleStockMsg("<b>JS</b>🔴 App data candle data featch failed "+ finalDate);
           await logUser("App data fetch api failed");
         } else {
           let requestHeaders1 = {
@@ -719,7 +724,7 @@ router.get('/intraday', function (req, res) {
             headers: requestHeaders1
           }, async (err, response, success) => {
             if (err) {
-              await teleStockMsg("Intraday candle data featch failed");
+              await teleStockMsg("<b>JS</b>🔴 Intraday candle data featch failed "+ finalDate);
               await logUser("Intraday candle data featch failed");
               return nextCall({
                 "message": "something went wrong",
@@ -731,7 +736,7 @@ router.get('/intraday', function (req, res) {
                 finalData.client_secret = appData[0].client_secret;
                 finalData.status1 = "logout";
                 await updateLoginUser(finalData)
-                await teleStockMsg("Intraday candle data featch failed")
+                await teleStockMsg("<b>JS</b>🔴 Intraday candle data featch failed "+ finalDate)
                 await logUser("Intraday candle data featch failed")
                 return nextCall({
                   "message": "something went wrong",
@@ -756,7 +761,7 @@ router.get('/intraday', function (req, res) {
                     "candles": convertedCandles
                   }
                 };
-                await teleStockMsg("Intraday candle data featch successfully")
+                await teleStockMsg('<b>JS</b>🟢 Intraday candle data : '+ finalDate)
                 await logUser("Intraday candle data featch successfully")
                 nextCall(null, desiredFormat);
               }
@@ -1818,7 +1823,8 @@ router.post('/api/editFlipkartFlags', function (req, res) {
 
 function teleStockMsg(msg) {
   bot = new nodeTelegramBotApi(config.token);
-  bot.sendMessage(config.channelId, "→ " + msg, {
+  bot.sendMessage(config.channelId, "→ "+msg, {
+    parse_mode: "HTML",
     disable_web_page_preview: true
   })
 }
