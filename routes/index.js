@@ -526,7 +526,8 @@ router.get('/buySellApi', function (req, res) {
     function (nextCall) {
       let sqlsss = "SELECT * FROM plateform_login";
       connection.query(sqlsss, async function (err, appData) {
-        let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm:ss');
+        let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm ss:SSS');
+        let finalDateTime =  moment.tz('Asia/Kolkata').format('DD-MM-YYYY HH:mm ss:SSS');
         if (err) {
           await teleStockMsg("App data fetch api failed");
           await logUser("App data fetch api failed");
@@ -560,7 +561,7 @@ router.get('/buySellApi', function (req, res) {
             headers: requestHeaders1
           }, async (err, response, success) => {
             if (err) {
-              await teleStockMsg("<b>JS</b>😔 BuySellApi candle data failed "+ finalDate);
+              await teleStockMsg("<b>VL</b>😔 BuySellApi candle data failed "+ finalDate);
               await logUser("BuySellApi candle data failed");
               return nextCall({
                 "message": "something went wrong",
@@ -572,7 +573,7 @@ router.get('/buySellApi', function (req, res) {
                 finalData.client_secret = appData[0].client_secret;
                 finalData.status1 = "logout";
                 await updateLoginUser(finalData)
-                await teleStockMsg("<b>JS</b>😔 BuySellApi candle data failed "+ finalDate)
+                await teleStockMsg("<b>VL</b>😔 BuySellApi candle data failed "+ finalDate)
                 await logUser("BuySellApi candle data failed")
                 return nextCall({
                   "message": "something went wrong",
@@ -582,23 +583,38 @@ router.get('/buySellApi', function (req, res) {
                 req.query.order_id = finalData.data.order_id;
                 req.query.user_id = appData[0].user_id;
                 // await orderBookDb(req.query);
-                var html = '<b>JS</b>📈 ' + req.query.order_type + '📈\n\n' +
-                '♨️ <b style="background-color:red;">User Name : </b> ' + appData[0].user_name + '\n' +
-                '🌐 <b>Share Name : </b> ' + req.query.instrument_token + '\n' +
-                '🚫 <b>Price : </b> ' + req.query.price + '\n' +
-                '💰 <b>Quantity : </b> ' + req.query.quantity + '\n' +
-                '🕙 <b>Order Book Time : </b> ' + finalDate + '\n' +
-                '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+                let html;
+                if(req.query.order_type != 'SL' && req.query.order_type != 'SL-M'){
+                  html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
+                 '🔀 <b>Direction : </b> <b> ' + req.query.transaction_type + '</b>'+(req.query.transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
+                 '🌐 <b>Script : </b> ' + req.query.instrument_token + '\n' +
+                 '💰 <b>Price : ₹</b> ' + req.query.price + '\n' +
+                 '🚫 <b>Qty : </b> ' + req.query.quantity + '\n' +
+                 '📈 <b>Mode : </b> ' + req.query.order_type + '\n' +
+                 '🕙 <b>Trade Time : </b> ' + finalDateTime + '\n' +
+                 '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+                }else{
+                  html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
+                 '🔀 <b>Direction : </b> <b> ' + req.query.transaction_type + '</b>'+(req.query.transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
+                 '🌐 <b>Script : </b> ' + req.query.instrument_token + '\n' +
+                 '💰 <b>Price : ₹</b> ' + req.query.price + '\n' +
+                 '🚫 <b>Qty : </b> ' + req.query.quantity + '\n' +
+                 '📈 <b>Mode : </b> ' + req.query.order_type + '\n' +
+                 '👉 <b>Trigger Price : </b> ' + req.query.trigger_price + '\n' +
+                 '🕙 <b>Trade Time : </b> ' + finalDateTime + '\n' +
+                 '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+                }
                 // '🟢 <b>High Value : </b> <i> ' + finalData.high_value + '</i>\n' +
                 // '🔴 <b>Low Value : </b> <i> ' + finalData.low_value + '</i>\n';
-                await teleStockMsg(html)
+                await teleStockMsg(html);
+                await teleAnotherStockMsg(html);
                 await logUser("BuySellApi candle data featch successfully")
                 nextCall(null, finalData);
               }
             }
           })
          }else{
-          await teleStockMsg("<b>JS</b>🏷️ "+req.query.order_type +" api featch but no order")
+          await teleStockMsg("<b>VL</b>🏷️ "+req.query.order_type +" api featch but no order")
           await logUser(req.query.order_type +" api featch but no order")
           // await orderModify(req.query);
           nextCall(null, req.query);
@@ -706,9 +722,9 @@ router.get('/intraday', function (req, res) {
     function (nextCall) {
       let sqlsss = "SELECT * FROM plateform_login";
       connection.query(sqlsss, async function (err, appData) {
-        let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm:ss');
+        let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm ss:SSS');
         if (err) {
-          await teleStockMsg("<b>JS</b>🔴 App data candle data featch failed "+ finalDate);
+          await teleStockMsg("<b>VL</b>🔴 App data candle data featch failed "+ finalDate);
           await logUser("App data fetch api failed");
         } else {
           let requestHeaders1 = {
@@ -724,8 +740,8 @@ router.get('/intraday', function (req, res) {
             headers: requestHeaders1
           }, async (err, response, success) => {
             if (err) {
-              await teleStockMsg("<b>JS</b>🔴 Intraday candle data featch failed "+ finalDate);
-              await logUser("Intraday candle data featch failed");
+              await teleStockMsg("<b>VL</b>🔴 Intraday candle featch failed "+ finalDate);
+              await logUser("Intraday candle featch failed");
               return nextCall({
                 "message": "something went wrong",
                 "data": null
@@ -736,8 +752,8 @@ router.get('/intraday', function (req, res) {
                 finalData.client_secret = appData[0].client_secret;
                 finalData.status1 = "logout";
                 await updateLoginUser(finalData)
-                await teleStockMsg("<b>JS</b>🔴 Intraday candle data featch failed "+ finalDate)
-                await logUser("Intraday candle data featch failed")
+                await teleStockMsg("<b>VL</b>🔴 Intraday candle featch failed "+ finalDate)
+                await logUser("Intraday candle featch failed")
                 return nextCall({
                   "message": "something went wrong",
                   "data": finalData
@@ -761,8 +777,8 @@ router.get('/intraday', function (req, res) {
                     "candles": convertedCandles
                   }
                 };
-                await teleStockMsg('<b>JS</b>🟢 Intraday candle data : '+ finalDate)
-                await logUser("Intraday candle data featch successfully")
+                await teleStockMsg('<b>VL</b>🟢 Intraday candle : '+ finalDate)
+                await logUser("Intraday candle featch successfully")
                 nextCall(null, desiredFormat);
               }
             }
@@ -1824,6 +1840,14 @@ router.post('/api/editFlipkartFlags', function (req, res) {
 function teleStockMsg(msg) {
   bot = new nodeTelegramBotApi(config.token);
   bot.sendMessage(config.channelId, "→ "+msg, {
+    parse_mode: "HTML",
+    disable_web_page_preview: true
+  })
+}
+
+function teleAnotherStockMsg(msg) {
+  bot = new nodeTelegramBotApi(config.token);
+  bot.sendMessage(config.channelId2, "→ "+msg, {
     parse_mode: "HTML",
     disable_web_page_preview: true
   })
