@@ -95,25 +95,25 @@ const connectWebSocket = async (wsUrl) => {
 };
 
 // Execute the async functions to get PortfolioFeedUrl and connect to WebSocket
-(async () => {
-  try {
-    console.log('try: ');
-    let sqlsss = "SELECT * FROM plateform_login";
-    connection.query(sqlsss, async function (err, appData) {
-      if (err) {
-        await logUser("App data fetch api failed websocket");
-      } else {
-        OAUTH2.accessToken = appData[0].access_token;
-        console.log('appData2222: ', appData[0].access_token);
-        const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
-        const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
-      }
-    })
-  } catch (error) {
-    // Catch and log any errors
-    console.error("An error occurred:", error);
-  }
-})();
+// (async () => {
+//   try {
+//     console.log('try: ');
+//     let sqlsss = "SELECT * FROM plateform_login";
+//     connection.query(sqlsss, async function (err, appData) {
+//       if (err) {
+//         await logUser("App data fetch api failed websocket");
+//       } else {
+//         OAUTH2.accessToken = appData[0].access_token;
+//         console.log('appData2222: ', appData[0].access_token);
+//         const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
+//         const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
+//       }
+//     })
+//   } catch (error) {
+//     // Catch and log any errors
+//     console.error("An error occurred:", error);
+//   }
+// })();
 
 router.get('/tradedata', function (req, res) {
   async.waterfall([
