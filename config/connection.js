@@ -1,7 +1,7 @@
 var mysql  = require('mysql');
 
 var db_config = {
-    connectionLimit : 100,
+    connectionLimit : 5,
     host     : 'offerzoneindia.com',
     user     : 'offerric_apadmin',
     password : 'S@!E6a6a123',
@@ -20,7 +20,7 @@ connection.getConnection(function(err,data){
       data.release();
 	  	console.log(' Error getting mysql_pool connection: ' + err);
 	  	//throw err;
-       connection = reconnect(connection);
+      //  connection = reconnect(connection);
   }else {
     data.release();
 
