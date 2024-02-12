@@ -129,6 +129,8 @@ function placeOrder(data) {
     if (err) {
       await logUser("order_book fetch api failed");
     } else {
+        let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm ss:SSS');
+        let finalDateTime =  moment.tz('Asia/Kolkata').format('DD-MM-YYYY HH:mm ss:SSS');
         let setPrice;
         let triggerPrice;
         if (appData[0].transaction_type == 'BUY') {
@@ -146,7 +148,7 @@ function placeOrder(data) {
           "Authorization": "Bearer " + appData[0].access_token
         }
 
-        let data = {
+        let data1 = {
           'quantity': Number(2),
           'product': appData[0].product,
           'validity': appData[0].validity,
@@ -163,7 +165,7 @@ function placeOrder(data) {
         request({
           uri: "https://api-v2.upstox.com/order/place",
           method: "POST",
-          body: JSON.stringify(data),
+          body: JSON.stringify(data1),
           headers: requestHeaders1
         }, async (err, response, success) => {
           if (err) {
@@ -186,29 +188,32 @@ function placeOrder(data) {
                 "data": finalData
               });
             } else {
-              req.query.order_id = finalData.data.order_id;
-              req.query.user_id = appData[0].user_id;
-              await orderBookDb(req.query);
+              appData[0].order_id = finalData.data.order_id;
+              appData[0].price =  Number(setPrice);
+              appData[0].quantity =  Number(2);
+              appData[0].order_type = "SL";
+              appData[0].transaction_type =  appData[0].transaction_type == 'BUY' ? "SELL" :"BUY";
+              await orderBookDb(appData[0]);
               let html;
-              if(req.query.order_type != 'SL' && req.query.order_type != 'SL-M'){
+              if(appData[0].order_type != 'SL' && appData[0].order_type != 'SL-M'){
                 html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
-               '🔀 <b>Direction : </b> <b> ' + req.query.transaction_type + '</b>'+(req.query.transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
-               '🌐 <b>Script : </b> ' + req.query.instrument_token + '\n' +
-               '💰 <b>Price : ₹</b> ' + req.query.price + '\n' +
-               '🚫 <b>Qty : </b> ' + req.query.quantity + '\n' +
-               '📈 <b>Mode : </b> ' + req.query.order_type + '\n' +
+               '🔀 <b>Direction : </b> <b> ' + appData[0].transaction_type + '</b>'+(appData[0].transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
+               '🌐 <b>Script : </b> ' + appData[0].instrument_token + '\n' +
+               '💰 <b>Price : ₹</b> ' + Number(setPrice) + '\n' +
+               '🚫 <b>Qty : </b> ' + appData[0].quantity + '\n' +
+               '📈 <b>Mode : </b> ' + appData[0].order_type + '\n' +
                '🕙 <b>Trade Time : </b> ' + finalDateTime + '\n' +
-               '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+               '📋 <b>Order Id : </b> ' + appData[0].order_id + '\n' ;
               }else{
                 html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
-               '🔀 <b>Direction : </b> <b> ' + req.query.transaction_type + '</b>'+(req.query.transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
-               '🌐 <b>Script : </b> ' + req.query.instrument_token + '\n' +
-               '💰 <b>Price : ₹</b> ' + req.query.price + '\n' +
-               '🚫 <b>Qty : </b> ' + req.query.quantity + '\n' +
-               '📈 <b>Mode : </b> ' + req.query.order_type + '\n' +
-               '👉 <b>Trigger Price : </b> ' + req.query.trigger_price + '\n' +
+               '🔀 <b>Direction : </b> <b> ' + appData[0].transaction_type + '</b>'+(appData[0].transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
+               '🌐 <b>Script : </b> ' + appData[0].instrument_token + '\n' +
+               '💰 <b>Price : ₹</b> ' + Number(setPrice) + '\n' +
+               '🚫 <b>Qty : </b> ' + appData[0].quantity + '\n' +
+               '📈 <b>Mode : </b> ' + appData[0].order_type + '\n' +
+               '👉 <b>Trigger Price : </b> ' + appData[0].trigger_price + '\n' +
                '🕙 <b>Trade Time : </b> ' + finalDateTime + '\n' +
-               '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+               '📋 <b>Order Id : </b> ' + appData[0].order_id + '\n' ;
               }
               await teleStockMsg(html);
               await teleAnotherStockMsg(html);
@@ -1629,7 +1634,7 @@ function orderModify(data) {
           "Authorization": "Bearer " + appData[0].access_token
         }
 
-        let data = {
+        let data1 = {
           'quantity': Number(appData[0].quantity),
           'validity': appData[0].validity,
           'order_id': appData[0].order_id,
@@ -1642,7 +1647,7 @@ function orderModify(data) {
         request({
           uri: "https://api-v2.upstox.com/order/modify",
           method: "PUT",
-          body: JSON.stringify(data),
+          body: JSON.stringify(data1),
           headers: requestHeaders1
         }, async (err, response, success) => {
           if (err) {
