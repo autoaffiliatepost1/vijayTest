@@ -83,8 +83,14 @@ const connectWebSocket = async (wsUrl) => {
       console.log("disconnected");
     });
 
-    ws.on("message", function message(data) {
-      console.log("data received", data.toString());
+    ws.on("message", function message(data1) {
+      let data = JSON.parse(data1);
+      // console.log("data received", data.toString());
+      console.log('data: ', data);
+      console.log('data.status: ', data.status);
+      if(data.status == 'complete' && data.tag == ORDER_TAG){
+        placeOrder(data);
+      }
     });
 
     ws.on("error", function onError(error) {
@@ -95,25 +101,125 @@ const connectWebSocket = async (wsUrl) => {
 };
 
 // Execute the async functions to get PortfolioFeedUrl and connect to WebSocket
-// (async () => {
-//   try {
-//     console.log('try: ');
-//     let sqlsss = "SELECT * FROM plateform_login";
-//     connection.query(sqlsss, async function (err, appData) {
-//       if (err) {
-//         await logUser("App data fetch api failed websocket");
-//       } else {
-//         OAUTH2.accessToken = appData[0].access_token;
-//         console.log('appData2222: ', appData[0].access_token);
-//         const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
-//         const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
-//       }
-//     })
-//   } catch (error) {
-//     // Catch and log any errors
-//     console.error("An error occurred:", error);
-//   }
-// })();
+(async () => {
+  try {
+    console.log('try: ');
+    let sqlsss = "SELECT * FROM plateform_login";
+    connection.query(sqlsss, async function (err, appData) {
+      if (err) {
+        await logUser("App data fetch api failed websocket");
+      } else {
+        OAUTH2.accessToken = appData[0].access_token;
+        console.log('appData2222: ', appData[0].access_token);
+        const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
+        const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
+      }
+    })
+  } catch (error) {
+    // Catch and log any errors
+    console.error("An error occurred:", error);
+  }
+})();
+
+function placeOrder(data) {
+  console.log('data.instrument_token: ', data.instrument_token.replace(/%7C/g, '|'));
+  let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment().format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
+  connection.query(sqlsss, async function (err, appData) {
+    console.log('orderData: ', appData);
+    if (err) {
+      await logUser("order_book fetch api failed");
+    } else {
+        let setPrice;
+        let triggerPrice;
+        if (appData[0].transaction_type == 'BUY') {
+          setPrice = Number(appData[0].low_value)
+          triggerPrice = setPrice + Number(appData[0].trigger_predication);
+        } else {
+          setPrice = Number(appData[0].high_value)
+          triggerPrice = setPrice - Number(appData[0].trigger_predication);
+        }
+
+        let requestHeaders1 = {
+          "accept": "application/json",
+          "Content-Type": "application/json",
+          "Api-Version": "2.0",
+          "Authorization": "Bearer " + appData[0].access_token
+        }
+
+        let data = {
+          'quantity': Number(2),
+          'product': appData[0].product,
+          'validity': appData[0].validity,
+          'price': Number(setPrice),
+          'tag': appData[0].tag,
+          'order_type': "SL",
+          'instrument_token': appData[0].instrument_token,
+          'transaction_type': appData[0].transaction_type == 'BUY' ? "SELL" :"BUY",
+          'disclosed_quantity': Number(appData[0].disclosed_quantity),
+          'trigger_price': Number(triggerPrice),
+          'is_amo': appData[0].is_amo = 'false' ? false : true
+        }
+
+        request({
+          uri: "https://api-v2.upstox.com/order/place",
+          method: "POST",
+          body: JSON.stringify(data),
+          headers: requestHeaders1
+        }, async (err, response, success) => {
+          if (err) {
+            await teleStockMsg("<b>VL</b>😔 placeOrder candle data failed "+ finalDate);
+            await logUser("placeOrder candle data failed");
+            return nextCall({
+              "message": "something went wrong",
+              "data": null
+            });
+          } else {
+            let finalData = JSON.parse(success);
+            if (finalData.status && finalData.status == "error") {
+              finalData.client_secret = appData[0].client_secret;
+              finalData.status1 = "logout";
+              await updateLoginUser(finalData)
+              await teleStockMsg("<b>VL</b>😔 placeOrder candle data failed "+ finalDate)
+              await logUser("placeOrder candle data failed")
+              return nextCall({
+                "message": "something went wrong",
+                "data": finalData
+              });
+            } else {
+              req.query.order_id = finalData.data.order_id;
+              req.query.user_id = appData[0].user_id;
+              await orderBookDb(req.query);
+              let html;
+              if(req.query.order_type != 'SL' && req.query.order_type != 'SL-M'){
+                html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
+               '🔀 <b>Direction : </b> <b> ' + req.query.transaction_type + '</b>'+(req.query.transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
+               '🌐 <b>Script : </b> ' + req.query.instrument_token + '\n' +
+               '💰 <b>Price : ₹</b> ' + req.query.price + '\n' +
+               '🚫 <b>Qty : </b> ' + req.query.quantity + '\n' +
+               '📈 <b>Mode : </b> ' + req.query.order_type + '\n' +
+               '🕙 <b>Trade Time : </b> ' + finalDateTime + '\n' +
+               '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+              }else{
+                html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
+               '🔀 <b>Direction : </b> <b> ' + req.query.transaction_type + '</b>'+(req.query.transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
+               '🌐 <b>Script : </b> ' + req.query.instrument_token + '\n' +
+               '💰 <b>Price : ₹</b> ' + req.query.price + '\n' +
+               '🚫 <b>Qty : </b> ' + req.query.quantity + '\n' +
+               '📈 <b>Mode : </b> ' + req.query.order_type + '\n' +
+               '👉 <b>Trigger Price : </b> ' + req.query.trigger_price + '\n' +
+               '🕙 <b>Trade Time : </b> ' + finalDateTime + '\n' +
+               '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+              }
+              await teleStockMsg(html);
+              await teleAnotherStockMsg(html);
+              await logUser("placeOrder candle data featch successfully")
+              nextCall(null, finalData);
+            }
+          }
+        })
+    }
+  })
+}
 
 router.get('/tradedata', function (req, res) {
   async.waterfall([
@@ -435,6 +541,125 @@ router.get('/login', function (req, res) {
   });
 });
 
+
+/** Stop/reverce apis */
+router.get('/stopReverceApi', function (req, res) {
+  async.waterfall([
+    function (nextCall) {
+      let sqlsss = "SELECT * FROM plateform_login";
+      connection.query(sqlsss, async function (err, appData) {
+        let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm ss:SSS');
+        let finalDateTime =  moment.tz('Asia/Kolkata').format('DD-MM-YYYY HH:mm ss:SSS');
+        if (err) {
+          await teleStockMsg("App data fetch api failed");
+          await logUser("App data fetch api failed");
+        } else {
+          if(req.query.live_trade == 'true' || req.query.live_trade == 'TRUE'){
+          let requestHeaders1 = {
+            "accept": "application/json",
+            "Content-Type": "application/json",
+            "Api-Version": "2.0",
+            "Authorization": "Bearer " + appData[0].access_token
+          }
+
+          let data = {
+            'quantity': Number(req.query.quantity),
+            'product': req.query.product,
+            'validity': req.query.validity,
+            'price': Number(req.query.price),
+            'tag': req.query.tag,
+            'order_type': req.query.order_type,
+            'instrument_token': req.query.instrument_token,
+            'transaction_type': req.query.transaction_type,
+            'disclosed_quantity': Number(req.query.disclosed_quantity),
+            'trigger_price': Number(req.query.trigger_price),
+            'is_amo': req.query.is_amo = 'false' ? false : true
+          }
+
+          request({
+            uri: "https://api-v2.upstox.com/order/place",
+            method: "POST",
+            body: JSON.stringify(data),
+            headers: requestHeaders1
+          }, async (err, response, success) => {
+            if (err) {
+              await teleStockMsg("<b>VL</b>😔 stopReverceApi candle data failed "+ finalDate);
+              await logUser("stopReverceApi candle data failed");
+              return nextCall({
+                "message": "something went wrong",
+                "data": null
+              });
+            } else {
+              let finalData = JSON.parse(success);
+              if (finalData.status && finalData.status == "error") {
+                finalData.client_secret = appData[0].client_secret;
+                finalData.status1 = "logout";
+                await updateLoginUser(finalData)
+                await teleStockMsg("<b>VL</b>😔 stopReverceApi candle data failed "+ finalDate)
+                await logUser("stopReverceApi candle data failed")
+                return nextCall({
+                  "message": "something went wrong",
+                  "data": finalData
+                });
+              } else {
+                req.query.order_id = finalData.data.order_id;
+                req.query.user_id = appData[0].user_id;
+                await orderBookDb(req.query);
+                let html;
+                if(req.query.order_type != 'SL' && req.query.order_type != 'SL-M'){
+                  html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
+                 '🔀 <b>Direction : </b> <b> ' + req.query.transaction_type + '</b>'+(req.query.transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
+                 '🌐 <b>Script : </b> ' + req.query.instrument_token + '\n' +
+                 '💰 <b>Price : ₹</b> ' + req.query.price + '\n' +
+                 '🚫 <b>Qty : </b> ' + req.query.quantity + '\n' +
+                 '📈 <b>Mode : </b> ' + req.query.order_type + '\n' +
+                 '🕙 <b>Trade Time : </b> ' + finalDateTime + '\n' +
+                 '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+                }else{
+                  html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
+                 '🔀 <b>Direction : </b> <b> ' + req.query.transaction_type + '</b>'+(req.query.transaction_type == 'BUY'? '🟢' : '🔴')+'\n' +
+                 '🌐 <b>Script : </b> ' + req.query.instrument_token + '\n' +
+                 '💰 <b>Price : ₹</b> ' + req.query.price + '\n' +
+                 '🚫 <b>Qty : </b> ' + req.query.quantity + '\n' +
+                 '📈 <b>Mode : </b> ' + req.query.order_type + '\n' +
+                 '👉 <b>Trigger Price : </b> ' + req.query.trigger_price + '\n' +
+                 '🕙 <b>Trade Time : </b> ' + finalDateTime + '\n' +
+                 '📋 <b>Order Id : </b> ' + req.query.order_id + '\n' ;
+                }
+                // '🟢 <b>High Value : </b> <i> ' + finalData.high_value + '</i>\n' +
+                // '🔴 <b>Low Value : </b> <i> ' + finalData.low_value + '</i>\n';
+                await teleStockMsg(html);
+                await teleAnotherStockMsg(html);
+                await logUser("stopReverceApi candle data featch successfully")
+                nextCall(null, finalData);
+              }
+            }
+          })
+         }else{
+          await teleStockMsg("<b>VL</b>🏷️ "+req.query.order_type +" api featch but no order")
+          await logUser(req.query.order_type +" api featch but no order")
+          await orderModify(req.query);
+          nextCall(null, req.query);
+         }
+        }
+      })
+    },
+  ], function (err, response) {
+    if (err) {
+      return res.send({
+        status_api: err.code ? err.code : 400,
+        message: (err && err.message) || "someyhing went wrong",
+        data: err.data ? err.data : null
+      });
+    }
+    return res.send({
+      status_api: 200,
+      message: "stopReverceApi Order successfully",
+      data: response
+    });
+  });
+});
+
 /** historical-data apis */
 router.get('/historical-data', function (req, res) {
   async.waterfall([
@@ -582,7 +807,6 @@ router.get('/buySellApi', function (req, res) {
               } else {
                 req.query.order_id = finalData.data.order_id;
                 req.query.user_id = appData[0].user_id;
-                // await orderBookDb(req.query);
                 let html;
                 if(req.query.order_type != 'SL' && req.query.order_type != 'SL-M'){
                   html = '<b>Account Id : </b> Vijay <b>[Upstock]</b> \n\n' +
@@ -616,7 +840,6 @@ router.get('/buySellApi', function (req, res) {
          }else{
           await teleStockMsg("<b>VL</b>🏷️ "+req.query.order_type +" api featch but no order")
           await logUser(req.query.order_type +" api featch but no order")
-          // await orderModify(req.query);
           nextCall(null, req.query);
          }
         }
@@ -1361,20 +1584,43 @@ function truncate(f) {
   return parseFloat(`${i}.${(d + '0'.repeat(n)).slice(0, n)}`);
 }
 
+function updateOrderHighLow(data) {
+    values = [
+      data.low_value,
+      data.high_value
+    ]
+    var sqlss = "UPDATE order_book set low_value =?,high_value =? WHERE order_id =" + JSON.stringify(data.order_id);
+    connection.query(sqlss, values, async function (err, data) {
+      if (err) {
+        await teleStockMsg("order low value update failed")
+        await logUser("order low value update failed")
+      } else {
+        await teleStockMsg("order low value update successfully")
+        await logUser("order low value update successfully")
+      }
+    })
+}
+
 function orderModify(data) {
   console.log('data.instrument_token: ', data.instrument_token.replace(/%7C/g, '|'));
-  let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "'";
+  let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment().format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
   connection.query(sqlsss, async function (err, appData) {
+    console.log('orderData: ', appData);
     if (err) {
       await logUser("order_book fetch api failed");
     } else {
       if (appData[0].high_value == data.high_value && appData[0].low_value == data.low_value) {
+      }else if (appData[0].high_value != data.high_value && appData[0].low_value == data.low_value) {
+        updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
+      }else if (appData[0].high_value == data.high_value && appData[0].low_value != data.low_value) {
+        updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
       } else {
-        let triggerPrice;
+        updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
+        let setPrice;
         if (appData[0].transaction_type == 'BUY') {
-          triggerPrice = Number(appData[0].low_value)
+          setPrice = Number(data.low_value)
         } else {
-          triggerPrice = Number(appData[0].high_value)
+          setPrice = Number(data.high_value)
         }
         let requestHeaders1 = {
           "accept": "application/json",
@@ -1387,10 +1633,10 @@ function orderModify(data) {
           'quantity': Number(appData[0].quantity),
           'validity': appData[0].validity,
           'order_id': appData[0].order_id,
-          'price': Number(appData[0].price),
+          'price': Number(setPrice),
           'order_type': appData[0].order_type,
           'disclosed_quantity': Number(appData[0].disclosed_quantity),
-          'trigger_price': triggerPrice
+          'trigger_price': Number(appData[0].trigger_price)
         }
 
         request({
@@ -1412,41 +1658,12 @@ function orderModify(data) {
   })
 }
 
-function dataStoreDb(data) {
-  values = [[
-    data.order_id,
-    data.user_id,
-    data.quantity,
-    data.product,
-    data.validity,
-    data.price,
-    data.tag,
-    data.instrument_token,
-    data.order_type,
-    data.transaction_type,
-    data.disclosed_quantity,
-    data.trigger_price,
-    data.is_amo,
-    data.high_value,
-    data.low_value,
-  ]]
-
-  let sqlss = "INSERT INTO order_book (order_id,user_id,quantity,product,validity,price,tag,instrument_token,order_type,transaction_type,disclosed_quantity,trigger_price,is_amo,high_value,low_value) VALUES ?";
-  connection.query(sqlss, [values], async function (err, data) {
-    if (err) {
-      await teleStockMsg("Order book failed")
-      await logUser("Order book failed")
-    } else {
-      await teleStockMsg("Order book successfully")
-      await logUser("Order book successfully")
-    }
-  })
-}
-
 function orderBookDb(data) {
   values = [[
     data.order_id,
+    moment().format('YYYY-MM-DD'),
     data.user_id,
+    data.trigger_predication,
     data.quantity,
     data.product,
     data.validity,
@@ -1462,7 +1679,7 @@ function orderBookDb(data) {
     data.low_value,
   ]]
 
-  let sqlss = "INSERT INTO order_book (order_id,user_id,quantity,product,validity,price,tag,instrument_token,order_type,transaction_type,disclosed_quantity,trigger_price,is_amo,high_value,low_value) VALUES ?";
+  let sqlss = "INSERT INTO order_book (order_id,order_date,user_id,trigger_predication,quantity,product,validity,price,tag,instrument_token,order_type,transaction_type,disclosed_quantity,trigger_price,is_amo,high_value,low_value) VALUES ?";
   connection.query(sqlss, [values], async function (err, data) {
     if (err) {
       await teleStockMsg("Order book failed")
