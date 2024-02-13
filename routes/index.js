@@ -127,7 +127,7 @@ function placeOrder(data) {
   connection.query(sqlsss, async function (err, appData) {
     console.log('orderData: ', appData);
     if (err) {
-      await logUser("order_book fetch api failed");
+      await logUser("order_book 2 fetch api failed");
       await teleStockMsg("STEP 1 ==========================>");
     } else {
       await teleStockMsg("STEP 2 ==========================>");
@@ -172,8 +172,8 @@ function placeOrder(data) {
         }, async (err, response, success) => {
           if (err) {
             await teleStockMsg("STEP 3 ==========================>");
-            await teleStockMsg("<b>VL</b>😔 placeOrder candle data failed "+ finalDate);
-            await logUser("placeOrder candle data failed");
+            await teleStockMsg("<b>VL</b>😔 placeOrder 2 candle data failed "+ finalDate);
+            await logUser("placeOrder 2 candle data failed");
             return nextCall({
               "message": "something went wrong",
               "data": null
@@ -186,8 +186,8 @@ function placeOrder(data) {
               finalData.status1 = "logout";
               await teleStockMsg("STEP 4 ==========================>");
               await updateLoginUser(finalData)
-              await teleStockMsg("<b>VL</b>😔 placeOrder candle data failed "+ finalDate)
-              await logUser("placeOrder candle data failed")
+              await teleStockMsg("<b>VL</b>😔 placeOrder 2 candle data failed "+ finalDate)
+              await logUser("placeOrder 2 candle data failed")
               return nextCall({
                 "message": "something went wrong",
                 "data": finalData
@@ -224,7 +224,7 @@ function placeOrder(data) {
               }
               await teleStockMsg(html);
               await teleAnotherStockMsg(html);
-              await logUser("placeOrder candle data featch successfully")
+              await logUser("placeOrder 2 candle data featch successfully")
               nextCall(0,finalData)
             }
           }
@@ -1619,15 +1619,21 @@ function orderModify(data) {
   connection.query(sqlsss, async function (err, appData) {
     console.log('orderData: ', appData);
     if (err) {
+      await teleStockMsg("mode 1 *****************************>");
       await logUser("order_book fetch api failed");
     } else {
+      await teleStockMsg("mode 2 *****************************>");
       if (appData[0].high_value == data.high_value && appData[0].low_value == data.low_value) {
+      await teleStockMsg("mode 3 *****************************>");
       }else if (appData[0].high_value != data.high_value && appData[0].low_value == data.low_value) {
-        updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
+        await teleStockMsg("mode 4 *****************************>");
+        await updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
       }else if (appData[0].high_value == data.high_value && appData[0].low_value != data.low_value) {
-        updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
+        await teleStockMsg("mode 5 *****************************>");
+        await updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
       } else {
-        updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
+        await teleStockMsg("mode 6 *****************************>");
+        await updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
         let setPrice;
         if (appData[0].transaction_type == 'BUY') {
           setPrice = Number(data.low_value)
@@ -1658,11 +1664,13 @@ function orderModify(data) {
           headers: requestHeaders1
         }, async (err, response, success) => {
           if (err) {
-            await teleStockMsg("Order modify failed")
-            await logUser("Order modify failed")
+            await teleStockMsg("mode 7 *****************************>");
+            await teleStockMsg("Order modify 3 failed")
+            await logUser("Order modify 3 failed")
           } else {
-            await teleStockMsg("Order modify successfully")
-            await logUser("Order modify successfully")
+            await teleStockMsg("mode 8 *****************************>");
+            await teleStockMsg("Order modify 3 successfully")
+            await logUser("Order modify 3 successfully")
           }
         })
       }
