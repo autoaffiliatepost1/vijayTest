@@ -123,7 +123,7 @@ const connectWebSocket = async (wsUrl) => {
 
 function placeOrder(data) {
   console.log('data.instrument_token: ', data.instrument_token.replace(/%7C/g, '|'));
-  let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment().format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
+  let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment(new Date()).format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
   connection.query(sqlsss, async function (err, appData) {
     console.log('orderData: ', appData);
     if (err) {
@@ -218,7 +218,6 @@ function placeOrder(data) {
               await teleStockMsg(html);
               await teleAnotherStockMsg(html);
               await logUser("placeOrder candle data featch successfully")
-              nextCall(null, finalData);
             }
           }
         })
@@ -1608,7 +1607,7 @@ function updateOrderHighLow(data) {
 
 function orderModify(data) {
   console.log('data.instrument_token: ', data.instrument_token.replace(/%7C/g, '|'));
-  let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment().format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
+  let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment(new Date()).format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
   connection.query(sqlsss, async function (err, appData) {
     console.log('orderData: ', appData);
     if (err) {
