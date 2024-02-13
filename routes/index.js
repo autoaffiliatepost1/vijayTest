@@ -128,7 +128,9 @@ function placeOrder(data) {
     console.log('orderData: ', appData);
     if (err) {
       await logUser("order_book fetch api failed");
+      await teleStockMsg("STEP 1 ==========================>");
     } else {
+      await teleStockMsg("STEP 2 ==========================>");
         let finalDate =  moment.tz('Asia/Kolkata').format('HH:mm ss:SSS');
         let finalDateTime =  moment.tz('Asia/Kolkata').format('DD-MM-YYYY HH:mm ss:SSS');
         let setPrice;
@@ -153,7 +155,7 @@ function placeOrder(data) {
           'product': appData[0].product,
           'validity': appData[0].validity,
           'price': Number(setPrice),
-          'tag': appData[0].tag,
+          'tag': "SL_Order",
           'order_type': "SL",
           'instrument_token': appData[0].instrument_token,
           'transaction_type': appData[0].transaction_type == 'BUY' ? "SELL" :"BUY",
@@ -169,6 +171,7 @@ function placeOrder(data) {
           headers: requestHeaders1
         }, async (err, response, success) => {
           if (err) {
+            await teleStockMsg("STEP 3 ==========================>");
             await teleStockMsg("<b>VL</b>😔 placeOrder candle data failed "+ finalDate);
             await logUser("placeOrder candle data failed");
             return nextCall({
@@ -176,10 +179,12 @@ function placeOrder(data) {
               "data": null
             });
           } else {
+            
             let finalData = JSON.parse(success);
             if (finalData.status && finalData.status == "error") {
               finalData.client_secret = appData[0].client_secret;
               finalData.status1 = "logout";
+              await teleStockMsg("STEP 4 ==========================>");
               await updateLoginUser(finalData)
               await teleStockMsg("<b>VL</b>😔 placeOrder candle data failed "+ finalDate)
               await logUser("placeOrder candle data failed")
@@ -191,8 +196,10 @@ function placeOrder(data) {
               appData[0].order_id = finalData.data.order_id;
               appData[0].price =  Number(setPrice);
               appData[0].quantity =  Number(2);
+              appData[0].trigger_price =  Number(triggerPrice);
               appData[0].order_type = "SL";
               appData[0].transaction_type =  appData[0].transaction_type == 'BUY' ? "SELL" :"BUY";
+              await teleStockMsg("STEP 5 ==========================>");
               await orderBookDb(appData[0]);
               let html;
               if(appData[0].order_type != 'SL' && appData[0].order_type != 'SL-M'){
@@ -218,6 +225,7 @@ function placeOrder(data) {
               await teleStockMsg(html);
               await teleAnotherStockMsg(html);
               await logUser("placeOrder candle data featch successfully")
+              nextCall(0,finalData)
             }
           }
         })
@@ -640,7 +648,7 @@ router.get('/stopReverceApi', function (req, res) {
             }
           })
          }else{
-          await teleStockMsg("<b>VL</b>🏷️ "+req.query.order_type +" api featch but no order")
+          await teleStockMsg("<b>VL</b>🔀 "+req.query.order_type +" api featch but no order")
           await logUser(req.query.order_type +" api featch but no order")
           await orderModify(req.query);
           nextCall(null, req.query);
@@ -1596,11 +1604,11 @@ function updateOrderHighLow(data) {
     var sqlss = "UPDATE order_book set low_value =?,high_value =? WHERE order_id =" + JSON.stringify(data.order_id);
     connection.query(sqlss, values, async function (err, data) {
       if (err) {
-        await teleStockMsg("order low value update failed")
-        await logUser("order low value update failed")
+        await teleStockMsg("order high-low value update failed")
+        await logUser("order high-low value update failed")
       } else {
-        await teleStockMsg("order low value update successfully")
-        await logUser("order low value update successfully")
+        await teleStockMsg("order high-low value update successfully")
+        await logUser("order high-low value update successfully")
       }
     })
 }
