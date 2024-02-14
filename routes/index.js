@@ -1624,10 +1624,10 @@ function orderModify(data) {
       await teleStockMsg("mode 2 *****************************>");
       if (appData[0].high_value == data.high_value && appData[0].low_value == data.low_value) {
       await teleStockMsg("mode 3 *****************************>");
-      }else if (appData[0].high_value != data.high_value && appData[0].low_value == data.low_value) {
+      }else if (appData[0].transaction_type == 'SELL' && appData[0].high_value != data.high_value && appData[0].low_value == data.low_value) {
         await teleStockMsg("mode 4 *****************************>");
         await updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
-      }else if (appData[0].high_value == data.high_value && appData[0].low_value != data.low_value) {
+      }else if (appData[0].transaction_type == 'BUY' && appData[0].high_value == data.high_value && appData[0].low_value != data.low_value) {
         await teleStockMsg("mode 5 *****************************>");
         await updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
       } else {
