@@ -125,7 +125,7 @@ function placeOrder(data) {
   console.log('data.instrument_token: ', data.instrument_token.replace(/%7C/g, '|'));
   let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment(new Date()).format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
   connection.query(sqlsss, async function (err, appData) {
-    console.log('orderData: ', appData);
+    console.log('orderData: ', appData[0]);
     if (err) {
       await logUser("order_book 2 fetch api failed");
       await teleStockMsg("STEP 1 ==========================>");
@@ -1617,7 +1617,7 @@ function orderModify(data) {
   console.log('data.instrument_token: ', data.instrument_token.replace(/%7C/g, '|'));
   let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment(new Date()).format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
   connection.query(sqlsss, async function (err, appData) {
-    console.log('orderData: ', appData);
+    console.log('orderData: ', appData[0]);
     if (err) {
       await teleStockMsg("mode 1 *****************************>");
       await logUser("order_book fetch api failed");
