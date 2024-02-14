@@ -1634,11 +1634,20 @@ function orderModify(data) {
         await teleStockMsg("mode 6 *****************************>");
         await updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
         let setPrice;
+        let triggerPrice;
+        // if (appData[0].transaction_type == 'SELL') {
+        //   setPrice = Number(data.low_value)
+        // } else {
+        //   setPrice = Number(data.high_value)
+        // }
         if (appData[0].transaction_type == 'SELL') {
-          setPrice = Number(data.low_value)
+          setPrice = Number(appData[0].low_value)
+          triggerPrice = setPrice + Number(appData[0].trigger_predication);
         } else {
-          setPrice = Number(data.high_value)
+          setPrice = Number(appData[0].high_value)
+          triggerPrice = setPrice - Number(appData[0].trigger_predication);
         }
+
         let requestHeaders1 = {
           "accept": "application/json",
           "Content-Type": "application/json",
@@ -1653,7 +1662,7 @@ function orderModify(data) {
           'price': Number(setPrice),
           'order_type': appData[0].order_type,
           'disclosed_quantity': Number(appData[0].disclosed_quantity),
-          'trigger_price': Number(appData[0].trigger_price)
+          'trigger_price': Number(triggerPrice)
         }
 
         console.log('data1=====orderModify: ', data1);
