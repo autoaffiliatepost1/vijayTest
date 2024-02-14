@@ -155,7 +155,7 @@ function placeOrder(data) {
           'product': appData[0].product,
           'validity': appData[0].validity,
           'price': Number(setPrice),
-          'tag': "SL_Order",
+          'tag': ORDER_TAG,
           'order_type': "SL",
           'instrument_token': appData[0].instrument_token,
           'transaction_type': appData[0].transaction_type == 'BUY' ? "SELL" :"BUY",
@@ -164,6 +164,7 @@ function placeOrder(data) {
           'is_amo': appData[0].is_amo = 'false' ? false : true
         }
 
+        console.log('data1:========== place sl ', data1);
         request({
           uri: "https://api-v2.upstox.com/order/place",
           method: "POST",
@@ -1673,7 +1674,6 @@ function orderModify(data) {
           body: JSON.stringify(data1),
           headers: requestHeaders1
         }, async (err, response, success) => {
-          console.log('response:===order ', response);
           console.log('success:===order ', success);
           if (err) {
             await teleStockMsg("mode 7 *****************************>");
