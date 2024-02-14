@@ -1634,7 +1634,7 @@ function orderModify(data) {
         await teleStockMsg("mode 6 *****************************>");
         await updateOrderHighLow({"order_id":appData[0].order_id,"high_value":data.high_value,"low_value":data.low_value})
         let setPrice;
-        if (appData[0].transaction_type == 'BUY') {
+        if (appData[0].transaction_type == 'SELL') {
           setPrice = Number(data.low_value)
         } else {
           setPrice = Number(data.high_value)
