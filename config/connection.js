@@ -20,7 +20,7 @@ connection.getConnection(function(err,data){
       data.release();
 	  	console.log(' Error getting mysql_pool connection: ' + err);
 	  	//throw err;
-      //  connection = reconnect(connection);
+       connection = reconnect(connection);
   }else {
     data.release();
 

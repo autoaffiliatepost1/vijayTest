@@ -225,7 +225,6 @@ function placeOrder(data) {
               await teleStockMsg(html);
               await teleAnotherStockMsg(html);
               await logUser("placeOrder 2 candle data featch successfully")
-              nextCall(0,finalData)
             }
           }
         })
@@ -452,7 +451,7 @@ setInterval(function setup() {
       console.log('appData: ', appData[0]);
     }
   })
-}, 19000)
+}, 20000)
 
 function testServer() {
   request({
