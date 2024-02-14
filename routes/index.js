@@ -1656,12 +1656,16 @@ function orderModify(data) {
           'trigger_price': Number(appData[0].trigger_price)
         }
 
+        console.log('data1=====orderModify: ', data1);
+
         request({
           uri: "https://api-v2.upstox.com/order/modify",
           method: "PUT",
           body: JSON.stringify(data1),
           headers: requestHeaders1
         }, async (err, response, success) => {
+          console.log('response:===order ', response);
+          console.log('success:===order ', success);
           if (err) {
             await teleStockMsg("mode 7 *****************************>");
             await teleStockMsg("Order modify 3 failed")
