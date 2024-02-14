@@ -88,7 +88,7 @@ const connectWebSocket = async (wsUrl) => {
       // console.log("data received", data.toString());
       console.log('data: ', data);
       console.log('data.status: ', data.status);
-      if(data.status == 'rejected' && data.tag == ORDER_TAG){
+      if(data.status == 'complete' && data.tag == ORDER_TAG){
         placeOrder(data);
       }
     });
