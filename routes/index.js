@@ -1641,11 +1641,11 @@ function orderModify(data) {
         //   setPrice = Number(data.high_value)
         // }
         if (appData[0].transaction_type == 'SELL') {
-          setPrice = Number(appData[0].low_value)
-          triggerPrice = setPrice + Number(appData[0].trigger_predication);
+          setPrice = Number(data.low_value)
+          triggerPrice = setPrice + Number(data.trigger_predication);
         } else {
-          setPrice = Number(appData[0].high_value)
-          triggerPrice = setPrice - Number(appData[0].trigger_predication);
+          setPrice = Number(data.high_value)
+          triggerPrice = setPrice - Number(data.trigger_predication);
         }
 
         let requestHeaders1 = {
