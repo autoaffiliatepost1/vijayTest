@@ -1,7 +1,7 @@
 var mysql  = require('mysql');
 
 var db_config = {
-    connectionLimit : 5,
+    connectionLimit : 3,
     host     : 'offerzoneindia.com',
     user     : 'offerric_apadmin',
     password : 'S@!E6a6a123',
