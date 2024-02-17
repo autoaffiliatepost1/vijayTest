@@ -63,7 +63,8 @@ const connectWebSocket = async (wsUrl) => {
 
     // Set up WebSocket event handlers
     ws.on("open", function open() {
-      console.log("connected");
+      console.log("VserverConnected "+ moment.tz('Asia/Kolkata').format('YYYY-MM-DD hh:mm:ss'));
+      teleStockMsg("VserverConnected "+ moment.tz('Asia/Kolkata').format('YYYY-MM-DD hh:mm:ss'));
       // let lta = 202.15;
       // let sl_percent = 0.5;
       // let sum = lta *(1-sl_percent/100);
@@ -80,9 +81,12 @@ const connectWebSocket = async (wsUrl) => {
     });
 
     ws.on("close", function close() {
-      console.log("disconnected");
-      console.log("disconnected");
-      console.log("disconnected");
+      console.log("VserverDisconnected" + moment.tz('Asia/Kolkata').format('YYYY-MM-DD hh:mm:ss'));
+      console.log("VserverDisconnected" + moment.tz('Asia/Kolkata').format('YYYY-MM-DD hh:mm:ss'));
+      teleStockMsg("VserverDisconnected" + moment.tz('Asia/Kolkata').format('YYYY-MM-DD hh:mm:ss'));
+      setTimeout(function() {
+        connect();
+      }, 1000);
     });
 
     ws.on("message", function message(data1) {
@@ -103,26 +107,42 @@ const connectWebSocket = async (wsUrl) => {
 };
 
 // Execute the async functions to get PortfolioFeedUrl and connect to WebSocket
-(async () => {
-  try {
-    console.log('try: ');
-    let sqlsss = "SELECT * FROM plateform_login";
-    connection.query(sqlsss, async function (err, appData) {
-      if (err) {
-        await logUser("App data fetch api failed websocket");
-      } else {
-        OAUTH2.accessToken = appData[0].access_token;
-        console.log('appData2222: ', appData[0].access_token);
-        const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
-        const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
-      }
-    })
-  } catch (error) {
-    // Catch and log any errors
-    console.error("An error occurred:", error);
-  }
-})();
+// (async () => {
+//   try {
+//     console.log('try: ');
+//     let sqlsss = "SELECT * FROM plateform_login";
+//     connection.query(sqlsss, async function (err, appData) {
+//       if (err) {
+//         await logUser("App data fetch api failed websocket");
+//       } else {
+//         OAUTH2.accessToken = appData[0].access_token;
+//         console.log('appData2222: ', appData[0].access_token);
+//         const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
+//         const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
+//       }
+//     })
+//   } catch (error) {
+//     // Catch and log any errors
+//     console.error("An error occurred:", error);
+//   }
+// })();
 
+function connect(){
+  console.log('try: ');
+  let sqlsss = "SELECT * FROM plateform_login";
+  connection.query(sqlsss, async function (err, appData) {
+    if (err) {
+      await logUser("App data fetch api failed websocket");
+    } else {
+      OAUTH2.accessToken = appData[0].access_token;
+      console.log('appData2222: ', appData[0].access_token);
+      const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
+      const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
+    }
+  })
+}
+
+connect();
 function placeOrder(data) {
   console.log('data.instrument_token: ', data.instrument_token.replace(/%7C/g, '|'));
   let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment(new Date()).format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
