@@ -81,13 +81,15 @@ const connectWebSocket = async (wsUrl) => {
 
     ws.on("close", function close() {
       console.log("disconnected");
+      console.log("disconnected");
+      console.log("disconnected");
     });
 
     ws.on("message", function message(data1) {
       let data = JSON.parse(data1);
       // console.log("data received", data.toString());
-      console.log('data: ', data);
-      console.log('data.status: ', data.status);
+      let socketData = JSON.stringify({'order_time':data.order_timestamp, 'direction':data.transaction_type , price:data.price , trigger_price:data.trigger_price , 'qty':data.quantity , 'orderType':data.order_type  , 'avg_price':data.average_price,'symbol':data.tradingsymbol ,  order_id:data.order_id, status:data.status});
+      console.log('socketData: ', socketData + '\n' );
       if(data.status == 'complete' && data.tag == ORDER_TAG){
         placeOrder(data);
       }
@@ -137,10 +139,10 @@ function placeOrder(data) {
         let triggerPrice;
         if (appData[0].transaction_type == 'BUY') {
           setPrice = Number(appData[0].low_value)
-          triggerPrice = setPrice + Number(appData[0].trigger_predication);
+          triggerPrice = truncate(setPrice + Number(appData[0].trigger_predication));
         } else {
           setPrice = Number(appData[0].high_value)
-          triggerPrice = setPrice - Number(appData[0].trigger_predication);
+          triggerPrice = truncate(setPrice - Number(appData[0].trigger_predication));
         }
 
         let requestHeaders1 = {
@@ -233,221 +235,12 @@ function placeOrder(data) {
   })
 }
 
-router.get('/tradedata', function (req, res) {
-  async.waterfall([
-    function (nextCall) {
-      let data = {
-        "status": "success",
-        "data": {
-          "candles": [
-            {
-              "date": "2023-09-29T00:00:00+05:30",
-              "open": 52.15,
-              "high": 53.8,
-              "low": 52.15,
-              "close": 52.8,
-              "vol": 34377987,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-28T00:00:00+05:30",
-              "open": 52.3,
-              "high": 52.75,
-              "low": 51.6,
-              "close": 51.9,
-              "vol": 30832380,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-27T00:00:00+05:30",
-              "open": 51.8,
-              "high": 52.4,
-              "low": 51.1,
-              "close": 52,
-              "vol": 30241826,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-26T00:00:00+05:30",
-              "open": 52.4,
-              "high": 52.8,
-              "low": 51.45,
-              "close": 51.6,
-              "vol": 21271205,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-25T00:00:00+05:30",
-              "open": 52.45,
-              "high": 52.7,
-              "low": 51.5,
-              "close": 52.25,
-              "vol": 22810402,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-22T00:00:00+05:30",
-              "open": 52.6,
-              "high": 53.9,
-              "low": 51.85,
-              "close": 52.05,
-              "vol": 53675534,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-21T00:00:00+05:30",
-              "open": 54.45,
-              "high": 55.4,
-              "low": 51.75,
-              "close": 52.35,
-              "vol": 50891570,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-20T00:00:00+05:30",
-              "open": 53.9,
-              "high": 56.35,
-              "low": 52.9,
-              "close": 55.5,
-              "vol": 64391050,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-18T00:00:00+05:30",
-              "open": 54.8,
-              "high": 55.45,
-              "low": 53.85,
-              "close": 54.2,
-              "vol": 43412811,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-15T00:00:00+05:30",
-              "open": 56.5,
-              "high": 56.6,
-              "low": 54.1,
-              "close": 54.8,
-              "vol": 56993750,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-14T00:00:00+05:30",
-              "open": 52.35,
-              "high": 56.85,
-              "low": 51.6,
-              "close": 55.9,
-              "vol": 112962101,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-13T00:00:00+05:30",
-              "open": 50.5,
-              "high": 52.2,
-              "low": 49.35,
-              "close": 51.9,
-              "vol": 51861783,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-12T00:00:00+05:30",
-              "open": 55.2,
-              "high": 55.7,
-              "low": 50.15,
-              "close": 50.7,
-              "vol": 78423300,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-11T00:00:00+05:30",
-              "open": 53.45,
-              "high": 55,
-              "low": 52.55,
-              "close": 54.7,
-              "vol": 111372704,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-08T00:00:00+05:30",
-              "open": 54,
-              "high": 54.25,
-              "low": 52.2,
-              "close": 52.8,
-              "vol": 32792462,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-07T00:00:00+05:30",
-              "open": 53.55,
-              "high": 54.35,
-              "low": 53,
-              "close": 53.95,
-              "vol": 34030394,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-06T00:00:00+05:30",
-              "open": 53.25,
-              "high": 53.6,
-              "low": 52.15,
-              "close": 53.3,
-              "vol": 35282390,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-05T00:00:00+05:30",
-              "open": 52,
-              "high": 53.7,
-              "low": 51.6,
-              "close": 52.7,
-              "vol": 86754268,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-04T00:00:00+05:30",
-              "open": 50.8,
-              "high": 52.35,
-              "low": 50.6,
-              "close": 51.3,
-              "vol": 37020654,
-              "oi": 0
-            },
-            {
-              "date": "2023-09-01T00:00:00+05:30",
-              "open": 50.35,
-              "high": 51.05,
-              "low": 49.9,
-              "close": 50.25,
-              "vol": 15600040,
-              "oi": 0
-            }
-          ]
-        }
-      }
-      nextCall(null, data);
-    }
-  ], function (err, response) {
-    if (err) {
-      return res.send({
-        status_api: err.code ? err.code : 400,
-        message: (err && err.msg) || "someyhing went wrong"
-      });
-    }
-    return res.send({
-      status_api: 200,
-      message: "Single recored sucessfully",
-      data: response
-    });
-  });
-});
-
 setInterval(function setup() {
   let sqlsss = "SELECT * FROM app_data";
   connection.query(sqlsss, async function (err, appData) {
-    console.log('appData: ', appData);
     if (err) {
       await logUser("App data fetch api failed");
     } else {
-
       testServer();
       console.log('appData: ', appData[0]);
     }
@@ -1643,10 +1436,10 @@ function orderModify(data) {
         // }
         if (appData[0].transaction_type == 'SELL') {
           setPrice = Number(data.low_value)
-          triggerPrice = setPrice + Number(data.trigger_predication);
+          triggerPrice = truncate(setPrice + Number(data.trigger_predication));
         } else {
           setPrice = Number(data.high_value)
-          triggerPrice = setPrice - Number(data.trigger_predication);
+          triggerPrice = truncate(setPrice - Number(data.trigger_predication));
         }
 
         let requestHeaders1 = {
@@ -2239,5 +2032,69 @@ router.post('/api/getAllInOneData', function (req, res) {
   });
 });
 
+/** getOrderHistory apis */
+router.get('/getOrderHistory', function (req, res) {
+  async.waterfall([
+    function (nextCall) {
+      let sqlsss = "SELECT * FROM plateform_login";
+      connection.query(sqlsss, async function (err, appData) {
+        if (err) {
+          await teleStockMsg("App data fetch api failed");
+          await logUser("App data fetch api failed");
+        } else {
+          let requestHeaders1 = {
+            "accept": "application/json",
+            "Api-Version": "2.0",
+            "Authorization": "Bearer " + appData[0].access_token
+          }
+
+          request({
+            uri: "https://api-v2.upstox.com/order/history?order_id=" + req.query.order_id,
+            method: "GET",
+            headers: requestHeaders1
+          }, async (err, response, success) => {
+            if (err) {
+              await teleStockMsg("getOrderHistory data featch failed");
+              await logUser("getOrderHistory data featch failed");
+              return nextCall({
+                "message": "something went wrong",
+                "data": null
+              });
+            } else {
+              let finalData = JSON.parse(success);
+              if (finalData.status && finalData.status == "error") {
+                finalData.client_secret = appData[0].client_secret;
+                finalData.status1 = "logout";
+                await updateLoginUser(finalData)
+                await teleStockMsg("getOrderHistory data featch failed")
+                await logUser("getOrderHistory data featch failed")
+                return nextCall({
+                  "message": "something went wrong",
+                  "data": finalData
+                });
+              } else {
+                await logUser("getOrderHistory candle data featch successfully")
+                nextCall(null, finalData);
+              }
+            }
+          })
+        }
+      })
+    },
+  ], function (err, response) {
+    if (err) {
+      return res.send({
+        status_api: err.code ? err.code : 400,
+        message: (err && err.message) || "someyhing went wrong",
+        data: err.data ? err.data : null
+      });
+    }
+    return res.send({
+      status_api: 200,
+      message: "getOrderHistory get successfully",
+      data: response
+    });
+  });
+});
 
 module.exports = router;
