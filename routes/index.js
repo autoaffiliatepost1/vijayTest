@@ -830,6 +830,107 @@ router.get('/intraday', function (req, res) {
   });
 });
 
+/** cancelAllOrder list apis */
+router.get('/cancelAllOrder', function (req, res) {
+  async.waterfall([
+    function (nextCall) {
+      let sqlsss = "SELECT * FROM plateform_login";
+      connection.query(sqlsss, async function (err, appData) {
+        if (err) {
+          await teleStockMsg("App data fetch api failed cancelAllOrder");
+          await logUser("App data fetch api failed cancelAllOrder");
+        } else {
+          let requestHeaders1 = {
+            "accept": "application/json",
+            "Api-Version": "2.0",
+            "Authorization": "Bearer " + appData[0].access_token
+          }
+
+          request({
+            uri: "https://api-v2.upstox.com/order/retrieve-all",
+            method: "GET",
+            headers: requestHeaders1
+          }, async (err, response, success) => {
+            if (err) {
+              await teleStockMsg("Order book list data featch failed");
+              await logUser("Order book list data featch failed");
+              return nextCall({
+                "message": "something went wrong",
+                "data": null
+              });
+            } else {
+              let finalData = JSON.parse(success);
+              console.log('finalData: ', finalData);
+              if (finalData.status && finalData.status == "error") {
+                finalData.client_secret = appData[0].client_secret;
+                finalData.status1 = "logout";
+                await updateLoginUser(finalData)
+                await teleStockMsg("Order book list data featch failed")
+                await logUser("Order book list data featch failed")
+                return nextCall({
+                  "message": "something went wrong",
+                  "data": finalData
+                });
+              } else {
+                finalData.data.map(async(statusData) => {
+                  if(statusData.status != 'complete'){
+                    await singleOrder(appData[0].client_secret,appData[0].access_token,statusData.order_id)
+                  }
+                });
+                await logUser("Order book list candle data featch successfully")
+                nextCall(null, finalData);
+              }
+            }
+          })
+        }
+      })
+    },
+  ], function (err, response) {
+    if (err) {
+      return res.send({
+        status_api: err.code ? err.code : 400,
+        message: (err && err.message) || "someyhing went wrong",
+        data: err.data ? err.data : null
+      });
+    }
+    return res.send({
+      status_api: 200,
+      message: "Order book list get successfully",
+      data: response
+    });
+  });
+});
+
+function singleOrder(client_secret,access_token,order_id){   
+  let requestHeaders1 = {
+    "accept": "application/json",
+    "Api-Version": "2.0",
+    "Authorization": "Bearer " + access_token
+  }
+
+  request({
+    uri: "https://api-v2.upstox.com/order/cancel?order_id=" + order_id,
+    method: "DELETE",
+    headers: requestHeaders1
+  }, async (err, response, success) => {
+    if (err) {
+      await teleStockMsg("Order cancel featch failed 11");
+      await logUser("Order cancel featch failed 11");
+    } else {
+      let cancelOrderList = JSON.parse(success);
+      if (cancelOrderList.status && cancelOrderList.status == "error") {
+        cancelOrderList.client_secret = client_secret;
+        cancelOrderList.status1 = "logout";
+        await updateLoginUser(cancelOrderList)
+        await teleStockMsg("Order cancel featch failed")
+        await logUser("Order cancel featch failed")
+      } else {
+        await logUser("Order book list candle data featch successfully")
+      }
+    }
+  })
+}
+
 /** Order book list apis */
 router.get('/orderBookList', function (req, res) {
   async.waterfall([
