@@ -95,7 +95,7 @@ const connectWebSocket = async (wsUrl) => {
       let socketData = JSON.stringify({'order_time':data.order_timestamp, 'direction':data.transaction_type , price:data.price , trigger_price:data.trigger_price , 'qty':data.quantity , 'orderType':data.order_type  , 'avg_price':data.average_price,'symbol':data.tradingsymbol ,  order_id:data.order_id, status:data.status});
       console.log('socketData: ', socketData + '\n' );
       if(data.status == 'complete' && data.tag == ORDER_TAG){
-        placeOrder(data);
+        // placeOrder(data);
       }
     });
 
@@ -127,22 +127,22 @@ const connectWebSocket = async (wsUrl) => {
 //   }
 // })();
 
-function connect(){
-  console.log('try: ');
-  let sqlsss = "SELECT * FROM plateform_login";
-  connection.query(sqlsss, async function (err, appData) {
-    if (err) {
-      await logUser("App data fetch api failed websocket");
-    } else {
-      OAUTH2.accessToken = appData[0].access_token;
-      console.log('appData2222: ', appData[0].access_token);
-      const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
-      const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
-    }
-  })
-}
+// function connect(){
+//   console.log('try: ');
+//   let sqlsss = "SELECT * FROM plateform_login";
+//   connection.query(sqlsss, async function (err, appData) {
+//     if (err) {
+//       await logUser("App data fetch api failed websocket");
+//     } else {
+//       OAUTH2.accessToken = appData[0].access_token;
+//       console.log('appData2222: ', appData[0].access_token);
+//       const wsUrl = await getPortfolioFeedUrl(); // First, get the authorization
+//       const ws = await connectWebSocket(wsUrl); // Then, connect to the WebSocket using the authorized URL
+//     }
+//   })
+// }
 
-connect();
+// connect();
 function placeOrder(data) {
   console.log('data.instrument_token: ', data.instrument_token.replace(/%7C/g, '|'));
   let sqlsss = "SELECT order_book.*, plateform_login.* FROM order_book JOIN plateform_login ON order_book.user_id = plateform_login.user_id WHERE order_book.instrument_token='" + data.instrument_token.replace(/%7C/g, '|') + "' and order_book.order_date='" + moment(new Date()).format('YYYY-MM-DD')+ "' ORDER BY order_book.id DESC";
